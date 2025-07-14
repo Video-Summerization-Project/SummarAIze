@@ -37,7 +37,7 @@ Open `main.py` and modify the `__main__` section with your file path:
 ```python
 if __name__ == "__main__":
     video_path = "your/video/path"
-    summarize_video(video_path)
+    summarize_video(video_path, transcription_provider= 'groq') # use groq / fireworks as povider
 ```
 
 ### 7. Run the script

@@ -9,9 +9,19 @@ def summarize_video(video_path : str, transcription_provider: str = "groq"):
     #make sure tmp/ has no files
     clear_tmp_directory() 
 
-    with ProcessPoolExecutor() as executor:
-        t_future = executor.submit(transcribe_audio_in_chunks, video_path=video_path, provider = transcription_provider ,model= "whisper-large-v3")
-        v_future = executor.submit(get_keyframes, video_path)
+    if transcription_provider == "groq":
+        with ProcessPoolExecutor() as executor:
+            t_future = executor.submit(transcribe_audio_in_chunks, video_path=video_path, provider = transcription_provider ,model= "whisper-large-v3")
+            v_future = executor.submit(get_keyframes, video_path)
+
+    elif transcription_provider == "fireworks":
+        with ProcessPoolExecutor() as executor:
+            t_future = executor.submit(transcribe_audio_in_chunks, video_path=video_path, provider = transcription_provider ,model= "whisper-v3")
+            v_future = executor.submit(get_keyframes, video_path)
+    
+    else:
+        return f"{transcription_provider} is not avilable / supported"
+
 
 
     clear_tmp_directory()      #uncomment this after impleminting full function to clear temp files
@@ -25,7 +35,7 @@ if __name__ == "__main__":
     start = time()
 
     video_path = "RawVideos\Linear Regression - Hesham Asem (720p, h264).mp4"
-    summarize_video(video_path)
+    summarize_video(video_path, transcription_provider= 'groq')
 
     end = time()
     print(f"Run in: {end-start : .2f}")
