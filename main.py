@@ -6,13 +6,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def summarize_video(video_path : str, transcription_provider: str = "groq"):
+    #make sure tmp/ has no files
+    clear_tmp_directory() 
 
     with ProcessPoolExecutor() as executor:
         t_future = executor.submit(transcribe_audio_in_chunks, video_path=video_path, provider = transcription_provider ,model= "whisper-large-v3")
         v_future = executor.submit(get_keyframes, video_path)
 
 
-        #clear_tmp_directory()      #uncomment this after impleminting full function to clear temp files
+    clear_tmp_directory()      #uncomment this after impleminting full function to clear temp files
 
     return True
 
