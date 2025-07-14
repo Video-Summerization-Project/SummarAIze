@@ -24,7 +24,7 @@ def summarize_video(video_path : str, transcription_provider: str = "groq"):
 
 
 
-    clear_tmp_directory()      #uncomment this after impleminting full function to clear temp files
+    #clear_tmp_directory()      #uncomment this after impleminting full function to clear temp files
 
     return True
 
