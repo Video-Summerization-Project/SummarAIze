@@ -1,0 +1,16 @@
+ffmpeg
+requests
+groq
+fireworks-ai
+dotenv
+pydub
+pandas
+opencv-contrib-python
+pillow
+scikit-image
+scikit-learn
+torch
+torchvision
+transformers
+imagehash
+av
