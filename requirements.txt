@@ -1,16 +1,37 @@
+# Core dependencies
 ffmpeg
 requests
-groq
-fireworks-ai
-dotenv
+python-dotenv
 pydub
 pandas
 opencv-contrib-python
 pillow
 scikit-image
 scikit-learn
-torch
-torchvision
-transformers
 imagehash
 av
+
+# PyTorch (ensure CUDA if needed)
+torch
+torchvision
+
+# HuggingFace Transformers
+transformers>=4.40.0
+
+# LangChain ecosystem
+langchain>=0.1.14
+chromadb>=0.4.24
+sentence-transformers
+
+# Google + Gemini support (fixed conflicts)
+protobuf==4.25.3
+google-api-core==2.17.1
+googleapis-common-protos==1.62.0
+langchain-google-genai>=0.0.9
+
+# Optional LLMs
+groq
+fireworks-ai
+
+# HuggingFace extensions
+hf_xet

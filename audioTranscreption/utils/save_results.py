@@ -49,7 +49,7 @@ def save_results(result: dict, audio_path: Path) -> Path:
         #print(f"\nResults saved to transcriptions folder:")
 
         
-        return base_path
+        return f"{base_path}_full.json"
     
     except IOError as e:
         print(f"Error saving results: {str(e)}")

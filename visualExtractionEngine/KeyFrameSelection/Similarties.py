@@ -4,13 +4,10 @@ import imagehash
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics.pairwise import cosine_similarity
 import torch
-from transformers import CLIPProcessor, CLIPModel
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
-
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32", trust_remote_code=True, use_safetensors=True)
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-clip_model.eval()
+"""
+"""
 
 def _resize_gray(frame):
     return cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (128, 128))
@@ -59,7 +56,7 @@ def hash_filter(records, hash_threshold=5, ssim_threshold=0.90, ssim_compare_win
 
     return distinct
 
-def _get_clip_embeddings(frames):
+def _get_clip_embeddings(frames, model, processor):
     """
     Computes the CLIP image embedding for a given video frame.
 
@@ -70,13 +67,13 @@ def _get_clip_embeddings(frames):
         np.ndarray: A normalized 1D NumPy array representing the CLIP image embedding.
     """
     images = [Image.fromarray(cv2.cvtColor(f, cv2.COLOR_BGR2RGB)) for f in frames]
-    inputs = clip_processor(images=images, return_tensors="pt", padding=True)
+    inputs = processor(images=images, return_tensors="pt", padding=True)
     with torch.no_grad():
-        features = clip_model.get_image_features(**inputs)
+        features = model.get_image_features(**inputs)
         normed = torch.nn.functional.normalize(features, p=2, dim=1)
     return normed.cpu().numpy()
 
-def clip_filter(records, similarity_threshold=0.85, compare_window=5, batch_size=8):
+def clip_filter(records,model, processor, similarity_threshold=0.85, compare_window=5, batch_size=8):
     """
     Filters frames using CLIP embeddings and cosine similarity in batch mode (CPU-optimized).
 
@@ -94,7 +91,7 @@ def clip_filter(records, similarity_threshold=0.85, compare_window=5, batch_size
 
     for i in range(0, len(frames), batch_size):
         batch_frames = frames[i:i+batch_size]
-        batch_embs = _get_clip_embeddings(batch_frames)
+        batch_embs = _get_clip_embeddings(batch_frames,model, processor)
         embeddings.extend(batch_embs)
 
     distinct = []

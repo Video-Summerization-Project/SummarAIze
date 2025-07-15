@@ -8,7 +8,7 @@ import time
 from .KeyFrameSelection.FeatureExtraction import process_video, save_records
 from .KeyFrameSelection.Similarties import hash_filter, clip_filter
 
-def get_keyframes(video_path):
+def get_keyframes(video_path, model, processor):
     records, fps = process_video(video_path, interval_sec=10)
 
     min_frames = 10
@@ -31,6 +31,8 @@ def get_keyframes(video_path):
 
         filtered = clip_filter(
             filtered,
+            model,
+            processor,
             similarity_threshold=clip_threshold,
             compare_window=5
         )
