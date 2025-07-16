@@ -35,9 +35,15 @@ GOOGLE_API_KEY=your_google_key
 ### 6. Configure your input video/audio
 Open `main.py` and modify the `__main__` section with your file path:
 ```python
-if __name__ == "__main__":
-    video_path = "your/video/path"
-    summarize_video(video_path, transcription_provider= 'groq') # use groq / fireworks as povider
+    task = input("summarize / search: ")
+    video_path = "path/to/video.mp4"
+
+    if task == "summarize":
+        _, _ = main(video_path, transcription_provider= 'groq', task=task)
+    else:
+        query = input("what are you searching for: ")
+        search_response, top_images = main(video_path, task=task, transcription_provider= 'groq', query=query)
+        print(search_response['answer'])
 ```
 
 ### 7. Run the script
