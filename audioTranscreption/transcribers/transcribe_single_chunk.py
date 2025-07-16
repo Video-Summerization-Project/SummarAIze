@@ -9,8 +9,8 @@ def transcribe_single_chunk(
     chunk,
     chunk_num: int,
     total_chunks: int,
-    provider: str = "fireworks",
-    model: str = "whisper-v3",
+    provider: str = "groq",
+    model: str = "whisper-large-v3",
     language: str = "ar",
     timestamp_type: str = "segment"
 ):
