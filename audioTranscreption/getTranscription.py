@@ -70,12 +70,12 @@ def transcribe_audio_in_chunks(video_path: Path, chunk_length: int = 600, overla
             results.append((result, start))
             
         final_result = merge_transcripts(results)
-        out_path = save_results(final_result, video_path)
-            
+        json_path = save_results(final_result, video_path)
+        text_path = json_path[:-10] + ".txt"
         #print(f"\nTotal Groq API transcription time: {total_transcription_time:.2f}s")
         
         #return final_result
-        return out_path
+        return json_path, text_path
     
     finally:
         if processed_path:
