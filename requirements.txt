@@ -23,3 +23,15 @@ googleapis-common-protos==1.62.0
 langchain_google_genai>=0.0.9
 groq
 fireworks-ai
+
+gradio
+
+dash 
+dash-core-components 
+dash-html-components 
+dash-daq  
+dash_bootstrap_components
+regex==2024.11.6
+
+pypi-json==0.4.0
+

@@ -4,3 +4,5 @@ RawVideos/
 bin/
 tmp/
 .env
+.venv
+.history

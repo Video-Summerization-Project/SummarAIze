@@ -16,7 +16,16 @@ def convert_audio_ffmpeg(input_path: str) -> str:
     if not input_path:
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
-    base_name = os.path.splitext(os.path.basename(input_path))[0] + '.flac'
+    # Create safe filename
+    input_path = input_path.replace("\\", "/")
+    input_path = os.path.normpath(input_path)
+
+    # Create safe filename
+    safe_name = os.path.splitext(os.path.basename(input_path))[0]
+    safe_name = safe_name.replace("(", "").replace(")", "").replace(",", "").replace(" ", "_").strip()
+    base_name = safe_name + ".flac"
+
+    # base_name = os.path.splitext(os.path.basename(input_path))[0] + '.flac'
     output_dir = "tmp"
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, base_name)
@@ -36,11 +45,11 @@ def convert_audio_ffmpeg(input_path: str) -> str:
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     if result.returncode != 0:
-        #print("[✘] ffmpeg conversion failed:")
-        #print(result.stderr)
+        print("[✘] ffmpeg conversion failed:")
+        print(result.stderr)
         raise RuntimeError("Audio conversion failed.")
 
-    #print(f"[✔] Audio converted and cleaned → {output_path}")
+    print(f"[✔] Audio converted and cleaned → {output_path}")
     return output_path
 
 

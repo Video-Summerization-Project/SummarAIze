@@ -4,6 +4,31 @@ from .rag import *
 import shutil
 
 
+# def search_images(folder_path, query, model, processor, topk=2):
+#     image_files = [f for f in os.listdir(folder_path)
+#                    if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp'))]
+
+#     if not image_files:
+#         print("❌ No image files found.")
+#         return []
+
+#     images = [Image.open(os.path.join(folder_path, f)) for f in image_files]
+#     inputs = processor(text=query, images=images, return_tensors="pt", padding=True)
+#     outputs = model(**inputs)
+#     logits_per_image = outputs.logits_per_image
+#     probs = logits_per_image
+
+#     results = list(zip(image_files, probs.tolist()))
+#     results.sort(key=lambda x: x[1], reverse=True)
+#     top_filenames = [os.path.splitext(filename)[0] for filename, _ in results[:topk]]
+
+#     return top_filenames
+
+def chunk_text(text, chunk_size=60):
+    words = text.split()
+    for i in range(0, len(words), chunk_size):
+        yield " ".join(words[i:i+chunk_size])
+
 def search_images(folder_path, query, model, processor, topk=2):
     image_files = [f for f in os.listdir(folder_path)
                    if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp'))]
@@ -13,16 +38,21 @@ def search_images(folder_path, query, model, processor, topk=2):
         return []
 
     images = [Image.open(os.path.join(folder_path, f)) for f in image_files]
-    inputs = processor(text=query, images=images, return_tensors="pt", padding=True)
-    outputs = model(**inputs)
-    logits_per_image = outputs.logits_per_image
-    probs = logits_per_image
 
-    results = list(zip(image_files, probs.tolist()))
+    max_probs = [0.0] * len(images)
+    for chunk in chunk_text(query):
+        inputs = processor(text=chunk, images=images, return_tensors="pt", padding=True, truncation=True)
+        outputs = model(**inputs)
+        logits = outputs.logits_per_image.squeeze().tolist()
+
+        max_probs = [max(p1, p2) for p1, p2 in zip(max_probs, logits)]
+
+    results = list(zip(image_files, max_probs))
     results.sort(key=lambda x: x[1], reverse=True)
     top_filenames = [os.path.splitext(filename)[0] for filename, _ in results[:topk]]
 
     return top_filenames
+
 
 
 def generate_answer_with_context(chunks, query, llm):

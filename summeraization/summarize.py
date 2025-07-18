@@ -90,6 +90,8 @@ def generate_markdown_summary(
         Visuals:
         {visual_snippets}
 
+        Make sure to place the relevant images directly after the matching topic, not all together at the end.
+        
         Respond with only the final Markdown summary document.
         """
 
