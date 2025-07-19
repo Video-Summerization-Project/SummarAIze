@@ -16,11 +16,9 @@ import dash
 
 from summeraization.summarize import load_transcript, generate_markdown_summary
 from summeraization.visuals.process import run_visual_pipeline
+import flask
 
-json_path = None
-text_path = None
-
-UPLOAD_FOLDER = "/home/israa/Desktop/SummarAIze/tmp"
+UPLOAD_FOLDER = "tmp"
 
 background_color = "#fcfaf6"  # soft light beige background
 headers_color = "#865D03"  
@@ -37,8 +35,15 @@ llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
 
 # app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
-app = Dash(__name__, assets_folder="tmp/frames/keyframes"  # set your image folder here
-)
+app = Dash(__name__)
+
+server = app.server
+
+# @server.route("/keyframes/<path:filename>")
+@server.route("/tmp/frames/keyframes/<path:filename>")
+def serve_frame(filename):
+    return flask.send_from_directory("tmp/frames/keyframes", filename)
+
 app.title = "Video Upload Example"
 
 app.layout = html.Div([
@@ -50,6 +55,8 @@ app.layout = html.Div([
                 "verticalAlign": "center"
             }),
         ], style={"textAlign": "center", "marginBottom": "1px"}),
+
+        dcc.Store(id="analysis-results", storage_type="memory"),
 
         html.P("- Upload your lecture or tutorial video", className="slide-text delay-1",style={
             "textAlign": "center",
@@ -169,16 +176,15 @@ def analyze_video(video_path : str, transcription_provider: str = "groq"):
 
 
 
-def run_search_backend(query, json_path):
-    if not query:
-        return "❌ Error: enter a query."
+def run_search_backend(video_path, query, json_path):
+    if not video_path or not query:
+        return "❌ Error: Upload a video and enter a query."
 
-    video_path = os.path
-    json_path, text_path = analyze_video(video_path, "groq")
+    # json_path, text_path = analyze_video(video_path, "groq")
 
     search_response, top_images = search_and_respond(
         text_path=json_path,
-        image_path= UPLOAD_FOLDER+"/frames/keyframes",
+        image_path="tmp/frames/keyframes",
         embedding_model=SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2"),
         model=clip_model,
         processor=clip_processor,
@@ -189,13 +195,13 @@ def run_search_backend(query, json_path):
 
     return dcc.Markdown(search_response['answer'])
 
-def run_summerization_backend(text_path):
+def run_summerization_backend(video_path, text_path):
 
-    json_path, text_path = analyze_video(video_path, "groq")
+    # json_path, text_path = analyze_video(video_path, "groq")
 
     TRANSCRIPT_PATH = text_path
-    KEYFRAMES_CSV = UPLOAD_FOLDER+"/frames/keyframes.csv"
-    DESCRIPTIONS_CSV = UPLOAD_FOLDER+"/frames/descriptions.csv"
+    KEYFRAMES_CSV = "tmp/frames/keyframes.csv"
+    DESCRIPTIONS_CSV = "tmp/frames/descriptions.csv"
     OUTPUT_MD = "summary.md"
 
     print("📊 Starting visual pipeline...")
@@ -208,109 +214,69 @@ def run_summerization_backend(text_path):
     with open(OUTPUT_MD, "w", encoding="utf-8") as f:
         f.write(markdown)
 
-    return dcc.Markdown(markdown, dangerously_allow_html=True)    
+    return dcc.Markdown(markdown, dangerously_allow_html=True)
     # return dcc.Markdown("markdown_content has been saved to summary.md", style={"whiteSpace": "pre-wrap"})  # Display the markdown content in the result box
 
 ########################################################### Upload and Callbacks ###########################################################
 @app.callback(
-    Output("video-status", "children"),
+    [Output("video-status", "children"),
+     Output("analysis-results", "data")],
     Input("upload-video", "contents"),
     State("upload-video", "filename")
 )
 def upload_video(contents, filename):
-    global json_path, text_path  # Make them accessible outside
-
     if contents and filename:
         try:
+            
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
             filepath = os.path.join(UPLOAD_FOLDER, filename)
-            video_path = os.path.join(UPLOAD_FOLDER, filename)
-
-            json_path, text_path = analyze_video(video_path, "groq")
+            with open(filepath, 'wb') as f:
+                f.write(decoded)
+            print("upload finished ")
+            json_path, text_path = analyze_video(filepath, "groq") ########################
+            print("analyse finished ")
 
             return html.Div([
                 html.P("✅ Upload Successful!", style={"color": "green", "fontWeight": "bold"}),
-                html.P(f"📁 {filename}", style={"fontStyle": "italic"})
-            ])
+                html.P(f"📁 {filename}", style={"fontStyle": "italic"}),
+            ]) , {"json": json_path, "text": text_path}
+        
         except Exception as e:
             return html.P(f"❌ Error: {e}", style={"color": "red"})
-    return ""
-
-@app.callback(
-    [Output("video-status", "children"),
-     Output("file-paths-store", "data")],
-    Input("upload-video", "contents"),
-    State("upload-video", "filename")
-)
-def upload_video(contents, filename):
-    if contents and filename:
-        try:
-            content_type, content_string = contents.split(',')
-            decoded = base64.b64decode(content_string)
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
-
-            with open(filepath, 'wb') as f:
-                f.write(decoded)
-
-
-            return (
-                html.Div([
-                    html.P("✅ Upload & Analysis Successful!", style={"color": "green", "fontWeight": "bold"}),
-                    html.P(f"📁 {filename}", style={"fontStyle": "italic"})
-                ]),
-                {"json_path": json_path, "text_path": text_path}
-            )
-        except Exception as e:
-            return html.P(f"❌ Error: {e}", style={"color": "red"}), dash.no_update
-    return "", dash.no_update
-
+    return "", {}
 
 ################################################ summarize & search into one ########################################################################
+
 @app.callback(
     Output("result-box", "children"),
     [Input("summarize-btn", "n_clicks"),
      Input("submit-query-btn", "n_clicks")],
-    [State("upload-video", "filename"),
-     State("query-input", "value")]
+    [State("analysis-results","data"),
+     State("upload-video","filename"),
+     State("query-input","value")]
 )
-def handle_output(summarize_clicks, search_clicks, filename, query):
+def handle_output(summarize_clicks, search_clicks, analysis, filename, query):
     if not filename:
         return dash.no_update
     
+    if not analysis:
+            return dash.no_update
+    
+    json_path = analysis["json"]
+    text_path = analysis["text"]
+
     triggered = ctx.triggered_id
 
+    video_path = os.path.join(UPLOAD_FOLDER, filename)
+
     if triggered == "summarize-btn" and summarize_clicks:
-        return run_summerization_backend(text_path)
+        return run_summerization_backend(video_path, text_path)
     
     elif triggered == "submit-query-btn" and search_clicks and query:
-        return run_search_backend(query, json_path)
+        return run_search_backend(video_path, query, json_path)
     
     return dash.no_update
-
-# @app.callback(
-#     Output("result-box", "children"),
-#     [Input("summarize-btn", "n_clicks"),
-#      Input("submit-query-btn", "n_clicks")],
-#     [State("query-input", "value"),
-#      State("file-paths-store", "data")]
-# )
-# def handle_output(summarize_clicks, search_clicks, query, data):
-#     if not data:
-#         return dash.no_update
-
-#     json_path = data.get("json_path")
-#     text_path = data.get("text_path")
-#     triggered = ctx.triggered_id
-
-#     if triggered == "summarize-btn" and summarize_clicks:
-#         return run_summerization_backend(text_path)
-
-#     elif triggered == "submit-query-btn" and search_clicks and query:
-#         return run_search_backend(query, json_path)
-
-#     return dash.no_update
-
 
 ################################### Show run search #############################################
 @app.callback(
@@ -321,7 +287,6 @@ def handle_output(summarize_clicks, search_clicks, filename, query):
     Input("search-btn", "n_clicks"),
     prevent_initial_call=True
 )
-
 def toggle_search_ui(n):
     if n:
         return (
