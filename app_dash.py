@@ -16,6 +16,7 @@ import dash
 
 from summeraization.summarize import load_transcript, generate_markdown_summary
 from summeraization.visuals.process import run_visual_pipeline
+import flask
 
 UPLOAD_FOLDER = "tmp"
 
@@ -35,6 +36,14 @@ llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
 # app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
 app = Dash(__name__)
+
+server = app.server
+
+# @server.route("/keyframes/<path:filename>")
+@server.route("/tmp/frames/keyframes/<path:filename>")
+def serve_frame(filename):
+    return flask.send_from_directory("tmp/frames/keyframes", filename)
+
 app.title = "Video Upload Example"
 
 app.layout = html.Div([
@@ -200,10 +209,11 @@ def run_summerization_backend(video_path):
     transcript_text = load_transcript(TRANSCRIPT_PATH)
     markdown = generate_markdown_summary(transcript_text, DESCRIPTIONS_CSV)
 
-    # with open(OUTPUT_MD, "r", encoding="utf-8") as f:
-    #     markdown_content = f.read()
+    with open(OUTPUT_MD, "w", encoding="utf-8") as f:
+        f.write(markdown)
 
-    return dcc.Markdown("markdown_content has been saved to summary.md", style={"whiteSpace": "pre-wrap"})  # Display the markdown content in the result box
+    return dcc.Markdown(markdown, dangerously_allow_html=True)
+    # return dcc.Markdown("markdown_content has been saved to summary.md", style={"whiteSpace": "pre-wrap"})  # Display the markdown content in the result box
 
 ########################################################### Upload and Callbacks ###########################################################
 @app.callback(
